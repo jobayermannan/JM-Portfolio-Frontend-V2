@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jobayer Mannan — Full Stack Developer</title>
+    <meta name="description" content="MERN Stack Developer &amp; Frontend Specialist based in Dhaka, Bangladesh." />
+    <meta property="og:title" content="Jobayer Mannan — Full Stack Developer" />
+    <meta property="og:description" content="MERN Stack Developer &amp; Frontend Specialist based in Dhaka, Bangladesh." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function() {
+        try {
+          var savedAccent = localStorage.getItem('portfolio_accent_color');
+          if (savedAccent) {
+            document.documentElement.style.setProperty('--accent', savedAccent);
+            // Derive a soft glow
+            var hex = savedAccent.replace('#', '');
+            if (hex.length === 6) {
+              var r = parseInt(hex.substring(0,2), 16);
+              var g = parseInt(hex.substring(2,4), 16);
+              var b = parseInt(hex.substring(4,6), 16);
+              document.documentElement.style.setProperty('--accent-glow', 'rgba(' + r + ',' + g + ',' + b + ', 0.35)');
+              document.documentElement.style.setProperty('--accent-soft', 'rgba(' + r + ',' + g + ',' + b + ', 0.12)');
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-[#101010] text-[#e3e2e6] selection:bg-white selection:text-[#101010] min-h-screen overflow-x-hidden antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

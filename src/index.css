@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-sans: "Inter Tight", "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  --accent: #8CFF9E;
+  --accent-glow: rgba(140, 255, 158, 0.4);
+  --accent-soft: rgba(140, 255, 158, 0.12);
+}
+
+html {
+  background-color: #101010;
+  color: #e3e2e6;
+  scroll-behavior: auto;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #101010;
+  color: #e3e2e6;
+  margin: 0;
+  padding: 0;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+/* Custom Glass Text Gradient & Glows */
+.text-glow {
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.2), 0 0 80px rgba(255, 255, 255, 0.1);
+}
+
+.text-silver-gradient {
+  background: linear-gradient(180deg, #FFFFFF 20%, #B8BAC0 70%, #8A8D95 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-accent-gradient {
+  background: linear-gradient(180deg, #FFFFFF 15%, var(--accent) 95%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-accent-glow {
+  text-shadow: 0 0 25px var(--accent-glow), 0 0 50px var(--accent-glow);
+}
+
+.text-hero-gradient {
+  background: linear-gradient(180deg, #FFFFFF 0%, #E6E8EC 55%, #A8ACB4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-blue-glow {
+  text-shadow: 0 0 30px rgba(120, 180, 255, 0.35), 0 0 60px rgba(80, 140, 255, 0.2);
+}
+
+/* Glass Floating Navbar */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+}
+
+/* Conic gradient rotation for avatar */
+@keyframes rotateConic {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.conic-ring {
+  background: conic-gradient(from 0deg, transparent 0deg, var(--accent) 90deg, transparent 180deg, var(--accent) 270deg, transparent 360deg);
+  animation: rotateConic 8s linear infinite;
+}
+
+/* Glass Card styles */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Traffic Light Glows */
+.traffic-red {
+  background: #ff5f56;
+  box-shadow: 0 0 10px rgba(255, 95, 86, 0.6);
+}
+.traffic-yellow {
+  background: #ffbd2e;
+  box-shadow: 0 0 10px rgba(255, 189, 46, 0.6);
+}
+.traffic-green {
+  background: #27c93f;
+  box-shadow: 0 0 10px rgba(39, 201, 63, 0.6);
+}
+
+/* Subtle background noise / ambient drift */
+@keyframes ambientDrift {
+  0% { transform: translateY(0px) scale(1); opacity: 0.03; }
+  50% { transform: translateY(20px) scale(1.03); opacity: 0.05; }
+  100% { transform: translateY(0px) scale(1); opacity: 0.03; }
+}
+
+.ambient-noise {
+  animation: ambientDrift 18s ease-in-out infinite;
+}
+
+/* Gentle Down-Arrow Bob */
+@keyframes bobDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+.bob-arrow {
+  animation: bobDown 2.4s ease-in-out infinite;
+}
+
+/* Hide default cursor on desktop when custom cursor active */
+@media (pointer: fine) {
+  body.custom-cursor-enabled,
+  body.custom-cursor-enabled a,
+  body.custom-cursor-enabled button {
+    cursor: none !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #101010;
+}
+::-webkit-scrollbar-thumb {
+  background: #262628;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3d;
+}
