@@ -1,3 +1,4 @@
+import { trainingFromCourse } from '../data/training.js';
 // Keep relative configuration rooted at the origin, including on /admin routes.
 export function normalizeApiUrl(value = '/api/v1') {
   const base = value.trim().replace(/\/+$/, '');
@@ -70,7 +71,11 @@ export async function getEducation() { return ((await getPortfolio()).education 
 export async function getProjects() {
   return ((await getPortfolio()).projects || []).map(item => ({ ...withId(item), category: item.category || 'Other' }));
 }
-export async function getCourses() { return ((await getPortfolio()).courses || []).map(withId); }
+export async function getDataMlProjects() {
+  return ((await getPortfolio()).dataMlProjects || []).filter(item => item.visible !== false).map(withId);
+}
+export async function getSectionSettings() { return (await getPortfolio()).about || {}; }
+export async function getCourses() { return ((await getPortfolio()).courses || []).map(item => withId(trainingFromCourse(item))); }
 export async function getBlogs() {
   return ((await getPortfolio()).blogs || []).map(item => ({ ...withId(item), content: item.content || '', year: item.date?.slice(0, 4) || '' }));
 }
@@ -94,8 +99,69 @@ export async function logout() {
 }
 export const checkSession = () => request('/admin-session', { admin: true });
 export const getMessages = (page = 1) => request(`/messages?page=${page}`, { admin: true });
-export const saveContent = (section, data, singleton = false) => request(`/${singleton || data._id ? 'update' : 'add'}-${section}`, { method: 'POST', body: data, admin: true });
-export const deleteContent = (section, id) => request(`/delete-${section}`, { method: 'POST', body: { _id: id }, admin: true });
+// Broadcast invalidation only; every tab reads the authoritative database state.
+const portfolioChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('portfolio-content') : null;
+portfolioChannel?.unref?.();
+export function subscribePortfolioChanges(refresh) {
+  const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+  portfolioChannel?.addEventListener('message', refresh);
+  window.addEventListener('portfolio-content-changed', refresh);
+  window.addEventListener('focus', refresh);
+  document.addEventListener('visibilitychange', onVisible);
+  const timer = setInterval(onVisible, 15000);
+  return () => {
+    portfolioChannel?.removeEventListener('message', refresh);
+    window.removeEventListener('portfolio-content-changed', refresh);
+    window.removeEventListener('focus', refresh);
+    document.removeEventListener('visibilitychange', onVisible);
+    clearInterval(timer);
+  };
+}
+export async function saveContent(section, data, singleton = false) {
+  const result = await request(`/${singleton || data._id ? 'update' : 'add'}-${section}`, { method: 'POST', body: data, admin: true });
+  if (section === 'course') {
+    const normalize = value => typeof value === 'string' ? value.trim() : value;
+    const fields = ['title', 'provider', 'type', 'status', 'duration', 'dateLabel', 'shortDescription', 'technologies', 'visible', 'displayOrder', 'certificateUrl'];
+    if (fields.some(key => Object.hasOwn(data, key) && JSON.stringify(normalize(data[key])) !== JSON.stringify(normalize(result.data?.[key])))) {
+      throw new Error('Training fields were not saved. Restart the backend with the updated Course schema and retry.');
+    }
+  }
+  const visibilityKeys = Object.keys(data).filter(key => key.endsWith('SectionVisible'));
+  const trainingKeys = ['coursesTitle', 'coursesSubtitle'].filter(key => Object.hasOwn(data, key));
+  if (section === 'about' && (visibilityKeys.length || Object.hasOwn(data, 'skillCategories') || trainingKeys.length)) {
+    const persisted = (await request('/portfolio-data')).about;
+    if (trainingKeys.some(key => persisted?.[key] !== data[key]?.trim())) throw new Error('Training section settings were not saved. Restart the updated backend and retry.');
+    if (visibilityKeys.some(key => persisted?.[key] !== data[key])) {
+      throw new Error('Visibility was not saved by the server. Restart the backend with the updated code and retry.');
+    }
+    if (Object.hasOwn(data, 'skillCategories')) {
+      const text = value => typeof value === 'string' ? value.trim() : value;
+      const normalize = categories => JSON.stringify(categories?.map(category => ({
+        name: text(category.name), description: text(category.description || ''), visible: category.visible !== false, order: category.order ?? 0,
+        skills: (category.skills || []).map(skill => ({ name: text(skill.name),
+          visible: skill.visible !== false, order: skill.order ?? 0, icon: text(skill.icon || '') })),
+      })));
+      if (normalize(persisted?.skillCategories) !== normalize(data.skillCategories) || !Array.isArray(persisted?.skillCategories) ||
+        ['skillsTitle', 'skillsSubtitle'].some(key => Object.hasOwn(data, key) && text(persisted?.[key]) !== text(data[key]))) {
+        throw new Error('Skills were not saved by the server. Restart the backend with the updated schema and retry.');
+      }
+    }
+    result.data = persisted;
+  }
+  pendingPortfolio = null;
+  portfolioChannel?.postMessage('changed');
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('portfolio-content-changed'));
+  return result;
+}
+export async function deleteContent(section, id) {
+  const result = await request(`/delete-${section}`, { method: 'POST', body: { _id: id }, admin: true });
+  if (section === 'course') {
+    pendingPortfolio = null;
+    portfolioChannel?.postMessage('changed');
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('portfolio-content-changed'));
+  }
+  return result;
+}
 export async function uploadImage(file) {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error('Choose a JPEG, PNG, or WebP image under 8 MB.');
   const response = await fetch(`${API_URL}/upload-image`, {

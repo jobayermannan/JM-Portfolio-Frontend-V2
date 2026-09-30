@@ -15,15 +15,26 @@ export interface ProjectItem {
   technologies?: string[];
   category: string;
   windowUrl?: string;
+  kind?: 'main' | 'data-ml';
+  featured?: boolean;
+  problem?: string;
+  datasetSource?: string;
+  techniques?: string[];
+  workflow?: string;
+  result?: string;
+  limitations?: string;
+  notebookUrl?: string;
+  fieldVisibility?: Record<string, boolean>;
 }
 
 interface ProjectCardProps {
   project: ProjectItem;
   index: number;
   totalCards: number;
+  stackIndex?: number;
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalCards }) => {
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalCards, stackIndex = index }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [imageError, setImageError] = useState(false);
 
@@ -43,17 +54,25 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
   // Subtle Parallax (about 20px) for inner media preview
   const innerParallax = useTransform(scrollYProgress, [0, 1], [-10, 15]);
 
-  const liveLink = project.liveUrl || project.link;
-  const displayUrl = project.windowUrl || `${project.title.toLowerCase().replace(/[^a-z0-9]/g, '')}.app`;
+  const isDataMl = project.kind === 'data-ml';
+  const show = (field: string) => !isDataMl || project.fieldVisibility?.[field] !== false;
+  const githubLink = show('githubLink') ? project.githubLink : '';
+  const liveLink = show('liveUrl') ? project.liveUrl || project.link : '';
+  const displayUrl = project.windowUrl || (isDataMl ? 'data-and-ml' : `${project.title.toLowerCase().replace(/[^a-z0-9]/g, '')}.app`);
   const description = project.detailedDescription || project.shortDescription || project.description || '';
-  const tags = project.technologies || [];
+  const tags = show('technologies') ? project.technologies || [] : [];
+  const detailRows = isDataMl ? [
+    ['Problem', project.problem, 'problem'], ['Dataset / source', project.datasetSource, 'datasetSource'],
+    ['Techniques / models', project.techniques?.join(', '), 'techniques'], ['Workflow', project.workflow, 'workflow'],
+    ['Result / findings', project.result, 'result'], ['Limitations', project.limitations, 'limitations'],
+  ].filter(([, value, field]) => value && show(field || '')) : [];
 
   return (
     <div
       ref={cardRef}
       className="sticky top-24 sm:top-28 w-full mb-16 sm:mb-24 last:mb-32 transform-gpu"
       style={{
-        zIndex: index + 10,
+        zIndex: stackIndex + 10,
       }}
     >
       <motion.article
@@ -79,9 +98,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
           </div>
 
           <div className="w-16 flex items-center justify-end gap-2">
-            {project.githubLink && (
+            {githubLink && (
               <a
-                href={project.githubLink}
+                href={githubLink}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`View ${project.title} on GitHub`}
@@ -111,6 +130,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
                 <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-white/70">
                   {project.category}
                 </span>
+                {isDataMl && project.featured && <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[var(--accent)]">Featured</span>}
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-white tracking-tight mt-1">
                 {project.title}
@@ -121,9 +141,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
             </div>
 
             <div className="flex flex-wrap items-center gap-2 self-start shrink-0">
-              {project.githubLink && (
+              {githubLink && (
                 <a
-                  href={project.githubLink}
+                  href={githubLink}
                   target="_blank"
                   rel="noreferrer"
                   className="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white text-xs font-medium transition-all duration-200 inline-flex items-center gap-1.5 border border-white/10"
@@ -132,6 +152,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
                   <span>Code</span>
                 </a>
               )}
+              {isDataMl && show('notebookUrl') && project.notebookUrl && <a href={project.notebookUrl} target="_blank" rel="noreferrer" className="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white text-xs font-medium transition-all duration-200 inline-flex items-center gap-1.5 border border-white/10">Notebook <ArrowUpRight className="w-3.5 h-3.5" /></a>}
               {liveLink && <a
                 href={liveLink}
                 target="_blank"
@@ -144,12 +165,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
             </div>
           </div>
 
+          {detailRows.length > 0 && <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-white/5 pt-5 text-sm">
+            {detailRows.map(([label, value]) => <div key={label} className="min-w-0"><span className="text-xs font-mono uppercase tracking-widest text-[#8e8e93]">{label}</span><p className="text-[#c4c4c8] leading-relaxed mt-1 whitespace-pre-wrap break-words">{value}</p></div>)}
+          </div>}
+
           {/* Inner Interactive Visual Container with Subtle Parallax */}
           <motion.div
             style={{ y: innerParallax }}
             className="w-full aspect-[16/9] max-h-[460px] rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 bg-[#0d0e11] shadow-2xl transform-gpu will-change-transform relative flex items-center justify-center"
           >
-            {project.image && !imageError ? (
+            {project.image && show('image') && !imageError ? (
               <img
                 src={project.image}
                 alt={project.title}
@@ -169,7 +194,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
                     <span className="text-xs font-mono text-white/50">{project.title}</span>
                   </div>
                   <span className="text-[11px] font-mono text-white/40 uppercase tracking-widest">
-                    Preview Interactive UI
+                    {isDataMl ? 'Data & ML work' : 'Preview Interactive UI'}
                   </span>
                 </div>
 
@@ -184,7 +209,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, totalC
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-white/5 text-[11px] text-white/40 font-mono">
-                  <span>PROJECT PREVIEW</span>
+                  <span>{isDataMl ? 'DATA & ML PREVIEW' : 'PROJECT PREVIEW'}</span>
                   <span>{project.category}</span>
                 </div>
               </div>

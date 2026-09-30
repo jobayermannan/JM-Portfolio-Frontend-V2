@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { SkillsSection } from './SkillsSection';
+import { ProfessionalDevelopment } from './ProfessionalDevelopment';
 import {
   ArrowUpRight,
   Mail,
@@ -13,7 +15,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Sparkles,
 } from 'lucide-react';
 import {
   getSkills,
@@ -22,6 +23,7 @@ import {
   getBlogs,
   getProfile,
   sendMessage,
+  subscribePortfolioChanges,
 } from '../api/index.js';
 
 interface BlogArticle {
@@ -34,7 +36,7 @@ interface BlogArticle {
   content: string;
 }
 
-export const AboutSection: React.FC = () => {
+export const AboutSection: React.FC<{ sectionSettings?: any }> = ({ sectionSettings }) => {
   // State for fetched data
   const [profile, setProfile] = useState<any>(null);
   const [skillsData, setSkillsData] = useState<any>(null);
@@ -93,6 +95,14 @@ export const AboutSection: React.FC = () => {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = subscribePortfolioChanges(() => {
+      getCourses().then(items => { if (active) setCourses(items); }).catch(() => {});
+    });
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -176,16 +186,23 @@ export const AboutSection: React.FC = () => {
     );
   }
 
-  const about = skillsData?.about || {};
-  const skills = skillsData?.skills || [];
+  const about = { ...skillsData?.about, ...sectionSettings };
   const experiences = profile?.experience || [];
   const contact = profile?.contact || {};
+  const showAbout = about.aboutSectionVisible !== false;
+  const showExperience = about.experienceSectionVisible !== false;
+  const showEducation = about.educationSectionVisible !== false;
+  const showSkills = about.skillsSectionVisible !== false;
+  const showCourses = about.coursesSectionVisible !== false;
+  const showArticles = about.articlesSectionVisible === true;
+  const showContact = about.contactSectionVisible !== false;
+  if (![showAbout, showExperience, showEducation, showSkills, showCourses, showArticles, showContact].some(Boolean)) return null;
 
   return (
     <section id="about" className="relative w-full pt-28 sm:pt-36 pb-24 px-6 sm:px-10 md:px-14">
       <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-16 sm:gap-24">
         {/* Eyebrow & Headline Header (Matches Image 3) */}
-        <div className="flex flex-col gap-6 max-w-5xl">
+        {showAbout && <div className="flex flex-col gap-6 max-w-5xl">
           {/* Eyebrow: glowing white dot + "ABOUT ME" */}
           <div className="flex items-center gap-3">
             <span
@@ -210,10 +227,10 @@ export const AboutSection: React.FC = () => {
               </span>
             </span>
           </h2>
-        </div>
+        </div>}
 
         {/* Two-Column Grid: Left Photo Card + Right Story Text */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        {showAbout && <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Left Column: Large photo in rounded frame with dark glass bezel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
@@ -259,7 +276,7 @@ export const AboutSection: React.FC = () => {
             </div>
 
             {/* Contact quick link */}
-            <div className="pt-2">
+            {showContact && <div className="pt-2">
               <a
                 href="#contact"
                 className="text-white hover:text-white/80 text-sm font-medium inline-flex items-center gap-1.5 group transition-colors"
@@ -267,14 +284,14 @@ export const AboutSection: React.FC = () => {
                 <span>{about.contactCtaLabel ?? ''}</span>
                 <ArrowUpRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[var(--accent)]" />
               </a>
-            </div>
+            </div>}
           </motion.div>
-        </div>
+        </div>}
 
         {/* Experience & Education Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-8 border-t border-white/[0.08]">
+        {(showExperience || showEducation) && <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-8 border-t border-white/[0.08]">
           {/* Experience Section */}
-          <div className="lg:col-span-6 flex flex-col gap-6">
+          {showExperience && <div className="lg:col-span-6 flex flex-col gap-6">
             <div className="flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-[var(--accent)]" />
               <span className="text-[#8e8e93] text-xs font-mono uppercase tracking-widest">
@@ -303,10 +320,10 @@ export const AboutSection: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* Education Section */}
-          <div className="lg:col-span-6 flex flex-col gap-6">
+          {showEducation && <div className="lg:col-span-6 flex flex-col gap-6">
             <div className="flex items-center gap-2">
               <GraduationCap className="w-4 h-4 text-[var(--accent)]" />
               <span className="text-[#8e8e93] text-xs font-mono uppercase tracking-widest">
@@ -342,111 +359,15 @@ export const AboutSection: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </div>}
+        </div>}
 
-        {/* Skills & Capabilities with Progress Bars */}
-        <div className="flex flex-col gap-8 pt-8 border-t border-white/[0.08]">
-          <div className="flex flex-col gap-1">
-            <span className="text-[#8e8e93] text-xs font-mono uppercase tracking-widest">
-              Technical Stack &amp; Mastery
-            </span>
-            <h3 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
-              Skills Breakdown
-            </h3>
-          </div>
+        {showSkills && <SkillsSection about={about} />}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {!skills.length && <p className="text-sm text-white/40">No skills listed yet.</p>}
-            {skills.map((skill: any) => (
-              <div
-                key={skill.name}
-                className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/15 transition-all flex flex-col gap-3 backdrop-blur-md group"
-              >
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-white group-hover:text-[var(--accent)] transition-colors">
-                    {skill.name}
-                  </span>
-                  <span className="font-mono text-xs text-[#8e8e93]">{skill.percentage}%</span>
-                </div>
-
-                {/* Progress bar with accent indicator */}
-                <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${skill.percentage}%` }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                    className="h-full rounded-full transition-colors duration-300"
-                    style={{
-                      backgroundColor: 'var(--accent)',
-                      boxShadow: '0 0 10px var(--accent-glow)',
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Courses Section */}
-        <div className="flex flex-col gap-8 pt-8 border-t border-white/[0.08]">
-          <div className="flex flex-col gap-1">
-            <span className="text-[#8e8e93] text-xs font-mono uppercase tracking-widest">
-              Professional Training
-            </span>
-            <h3 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
-              Courses &amp; Specializations
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {!courses.length && <p className="text-sm text-white/40">No courses listed yet.</p>}
-            {courses.map((course: any) => (
-              <div
-                key={course.id}
-                className="p-6 sm:p-8 rounded-3xl bg-white/[0.03] border border-white/[0.08] hover:border-white/20 transition-all flex flex-col justify-between gap-6 backdrop-blur-md relative overflow-hidden group"
-              >
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-white/80">
-                      {course.category}
-                    </span>
-                    {course.badge && (
-                      <span className="text-xs font-mono text-[var(--accent)] flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        {course.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  <h4 className="text-xl sm:text-2xl font-semibold text-white mt-1">
-                    {course.title}
-                  </h4>
-                  <p className="text-xs font-mono text-[#8e8e93]">{course.instructor}</p>
-                  <p className="text-sm text-[#a1a1aa] leading-relaxed mt-1">
-                    {course.description}
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                  {course.link && <a
-                    href={course.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-white hover:text-[var(--accent)] transition-colors group/link"
-                  >
-                    <span>View Curriculum</span>
-                    <ArrowUpRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                  </a>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {showCourses && <ProfessionalDevelopment about={about} courses={courses} />}
 
         {/* Blog Section Grouped by Year */}
-        <div className="flex flex-col gap-8 pt-8 border-t border-white/[0.08]">
+        {showArticles && <div className="flex flex-col gap-8 pt-8 border-t border-white/[0.08]">
           <div className="flex flex-col gap-1">
             <span className="text-[#8e8e93] text-xs font-mono uppercase tracking-widest">
               Writing &amp; Metaphors
@@ -496,10 +417,10 @@ export const AboutSection: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Contact / Say Hello Section */}
-        <div id="contact" className="flex flex-col gap-10 pt-8 border-t border-white/[0.08]">
+        {showContact && <div id="contact" className="flex flex-col gap-10 pt-8 border-t border-white/[0.08]">
           <div className="flex flex-col gap-2 max-w-xl">
             <span className="text-[#8e8e93] text-xs font-mono uppercase tracking-widest">
               Get in Touch
@@ -638,7 +559,7 @@ export const AboutSection: React.FC = () => {
               </form>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Blog Article Detail Modal */}

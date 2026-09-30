@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, LogOut, Plus, Save, Trash2, Inbox, ArrowLeft } from 'lucide-react';
-import { checkSession, getToken, login, logout, getPortfolio, getMessages, saveContent, deleteContent, heroFromIntro, uploadImage } from '../api/index.js';
-import { sections, type Section } from './fields';
+import { ArrowUpRight, LogOut, Plus, Save, Trash2, Inbox, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { checkSession, getToken, login, logout, getPortfolio, getMessages, saveContent, deleteContent, heroFromIntro, uploadImage, subscribePortfolioChanges } from '../api/index.js';
+import { sections, courseSectionSettings, type Section } from './fields';
+import { SkillsEditor } from './SkillsEditor';
+import { categoriesFromAbout, skillsTitle, skillsSubtitle } from '../data/skills.js';
+import { trainingFromCourse, trainingTitle, trainingSubtitle } from '../data/training.js';
 
 const inputClass = 'w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--accent)]';
 const buttonClass = 'inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed';
@@ -13,7 +16,9 @@ const setValue = (data: any, key: string, value: any) => {
 
 function Editor({ section, initial, onSaved, onCancel }: { section: Section; initial: any; onSaved: (record: any) => void; onCancel?: () => void }) {
   const [draft, setDraft] = useState<any>(() => {
-    const record = { ...initial };
+    const record = section.key === 'course' ? trainingFromCourse(initial) : { ...initial };
+    if (section.key === 'course-settings') Object.assign(record, { coursesTitle: initial.coursesTitle ?? trainingTitle, coursesSubtitle: initial.coursesSubtitle ?? trainingSubtitle });
+    if (section.key === 'skills') Object.assign(record, { skillCategories: categoriesFromAbout(initial), skillsTitle: initial.skillsTitle ?? skillsTitle, skillsSubtitle: initial.skillsSubtitle ?? skillsSubtitle });
     if (section.key === 'intro') Object.assign(record, heroFromIntro(record));
     for (const field of section.fields) if (field.type === 'list') record[field.key] = (record[field.key] || []).join(', ');
     return record;
@@ -28,6 +33,9 @@ function Editor({ section, initial, onSaved, onCancel }: { section: Section; ini
     return () => window.removeEventListener('beforeunload', guard);
   }, [dirty]);
   const change = (key: string, value: any) => { setDirty(true); setNotice(''); setDraft((prev: any) => setValue(prev, key, value)); };
+  useEffect(() => {
+    if (section.key === 'visibility' && !dirty) setDraft({ ...initial });
+  }, [initial, section.key, dirty]);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -35,10 +43,11 @@ function Editor({ section, initial, onSaved, onCancel }: { section: Section; ini
     try {
       const payload: any = {};
       if (draft._id) payload._id = draft._id;
+      if (section.recordKind) payload.kind = section.recordKind;
       for (const field of section.fields) {
-        let value = getValue(draft, field.key) ?? (field.type === 'skills' ? [] : '');
+        let value = getValue(draft, field.key) ?? (field.type === 'skills' ? [] : field.type === 'checkbox' ? field.defaultValue ?? false : '');
         if (field.type === 'list') value = value.split(',').map((item: string) => item.trim()).filter(Boolean);
-        if (field.type === 'skills') value = value.map((skill: any) => ({ name: skill.name.trim(), percentage: Number(skill.percentage) }));
+        if (field.type === 'skills') value = value.map((category: any, order: number) => ({ ...category, name: category.name.trim(), order, skills: category.skills.map((skill: any, order: number) => ({ ...skill, name: skill.name.trim(), order })) }));
         if (field.type === 'number') value = Number(value) || 0;
         Object.assign(payload, setValue(payload, field.key, value));
         if (field.type === 'image') payload[`${field.key}PublicId`] = draft[`${field.key}PublicId`] || '';
@@ -60,6 +69,8 @@ function Editor({ section, initial, onSaved, onCancel }: { section: Section; ini
     <fieldset disabled={busy} className="grid grid-cols-1 md:grid-cols-2 gap-5">
       {section.fields.map(field => {
         const value = getValue(draft, field.key);
+        if (field.type === 'checkbox') return <label key={field.key} className="flex items-center gap-3 text-sm text-white/70"><input type="checkbox" className="accent-[var(--accent)] w-4 h-4" checked={value ?? field.defaultValue ?? false} onChange={event => change(field.key, event.target.checked)} />{field.label}</label>;
+        if (field.type === 'select') return <label key={field.key} className="flex flex-col gap-2 text-sm text-white/70">{field.label}<select aria-label={section.key === 'course' ? field.label : undefined} required={field.required} className={inputClass} value={value ?? ''} onChange={event => change(field.key, event.target.value)}><option value="">Choose a type</option>{field.options?.map(option => <option key={option} value={option}>{option}</option>)}</select></label>;
         if (field.type === 'image') return <div key={field.key} className="md:col-span-2 flex flex-col gap-3">
           <span className="text-sm text-white/70">{field.label}</span>
           {value && <img src={value} alt="Current preview" className="w-32 h-32 object-cover rounded-xl border border-white/15" />}
@@ -72,17 +83,7 @@ function Editor({ section, initial, onSaved, onCancel }: { section: Section; ini
           <input aria-label={`${field.label} URL`} className={inputClass} value={value || ''} placeholder="https://..." onChange={event => { const url = event.target.value; setDraft((prev: any) => ({ ...prev, [field.key]: url, [`${field.key}PublicId`]: '' })); setDirty(true); }} />
           {value && <button type="button" className={buttonClass + ' self-start'} onClick={() => { setDraft((prev: any) => ({ ...prev, [field.key]: '', [`${field.key}PublicId`]: '' })); setDirty(true); }}>Remove image</button>}
         </div>;
-        if (field.type === 'skills') return <div key={field.key} className="md:col-span-2 flex flex-col gap-3">
-          <span className="text-sm text-white/70">Skills</span>
-          {(value || []).map((skill: any, index: number) => <div key={index} className="flex flex-wrap sm:flex-nowrap gap-3">
-            <input aria-label={`Skill ${index + 1} name`} required maxLength={100} className={inputClass} value={skill.name} placeholder="Skill name" onChange={e => change('skills', value.map((item: any, i: number) => i === index ? { ...item, name: e.target.value } : item))} />
-            <input aria-label={`Skill ${index + 1} percentage`} required type="number" min={0} max={100} className={inputClass + ' sm:max-w-32'} value={skill.percentage} onChange={e => change('skills', value.map((item: any, i: number) => i === index ? { ...item, percentage: e.target.value } : item))} />
-            <button type="button" aria-label={`Remove skill ${index + 1}`} className={buttonClass} onClick={() => change('skills', value.filter((_: any, i: number) => i !== index))}><Trash2 size={16} /></button>
-            <button type="button" aria-label={`Move skill ${index + 1} up`} disabled={index === 0} className={buttonClass} onClick={() => { const next = [...value]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; change('skills', next); }}>↑</button>
-            <button type="button" aria-label={`Move skill ${index + 1} down`} disabled={index === value.length - 1} className={buttonClass} onClick={() => { const next = [...value]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; change('skills', next); }}>↓</button>
-          </div>)}
-          <button type="button" className={buttonClass + ' self-start'} onClick={() => change('skills', [...(value || []), { name: '', percentage: 0 }])}><Plus size={16} /> Add skill</button>
-        </div>;
+        if (field.type === 'skills') return <SkillsEditor key={field.key} value={value || []} onChange={value => change(field.key, value)} />;
         return <label key={field.key} className={'flex flex-col gap-2 ' + (field.type === 'textarea' ? 'md:col-span-2' : '')}>
           <span id={`label-${field.key}`} className="text-sm text-white/70">{field.label}{field.required ? ' *' : ''}</span>
           {field.type === 'textarea' ? <textarea aria-labelledby={`label-${field.key}`} aria-describedby={field.hint ? `hint-${field.key}` : undefined} required={field.required} rows={field.key === 'content' ? 12 : 3} className={inputClass} value={value ?? ''} onChange={e => change(field.key, e.target.value)} /> :
@@ -146,6 +147,14 @@ export default function Admin() {
     try { setData(await getPortfolio()); } catch (err: any) { setError(err.message); } finally { setBusy(false); }
   };
   useEffect(() => { if (authenticated) { refresh(); if (window.location.pathname === '/admin-login') window.history.replaceState(null, '', '/admin'); } }, [authenticated]);
+  useEffect(() => {
+    if (!authenticated) return;
+    let active = true;
+    const unsubscribe = subscribePortfolioChanges(() => {
+      getPortfolio().then((value: any) => { if (active) setData(value); }).catch(() => {});
+    });
+    return () => { active = false; unsubscribe(); };
+  }, [authenticated]);
   async function signIn(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError('');
     try { await login(username, password); setPassword(''); setAuthenticated(true); }
@@ -164,18 +173,41 @@ export default function Admin() {
       const rows = previous[section.collection] || [];
       return { ...previous, [section.collection]: rows.some((row: any) => row._id === record._id) ? rows.map((row: any) => row._id === record._id ? record : row) : [...rows, record] };
     });
-    if (section?.collection) { setEditing(null); setNotice('Saved. The item is now available on your portfolio.'); }
+    if (section?.collection) {
+      setEditing(null);
+      setNotice(section.key === 'course' && (data?.about?.coursesSectionVisible === false || record.visible === false) ? 'Saved, but hidden from the portfolio. Enable the section and item visibility to publish it.' : section.recordKind === 'data-ml' && (data?.about?.dataMlSectionVisible === false || record.visible === false)
+        ? 'Saved, but hidden from the portfolio. Show the Data & ML section and enable “Show this project” to publish it.'
+        : 'Saved. The item is now available on your portfolio.');
+    }
   }
   async function remove(item: any) {
     if (!section || !window.confirm(`Delete “${item.title || item.degree || item.company}”? This cannot be undone.`)) return;
     setBusy(true); setError(''); setNotice('');
     try {
-      await deleteContent(section.key, item._id);
+      await deleteContent(section.source || section.key, item._id);
       setData((previous: any) => ({ ...previous, [section.collection!]: previous[section.collection!].filter((row: any) => row._id !== item._id) }));
       setNotice('Item deleted.');
     } catch (err: any) { setError(err.message); }
     finally { setBusy(false); }
   }
+  async function toggleSectionVisibility() {
+    if (!section?.visibilityKey || !data || busy) return;
+    const visible = section.visibilityKey === 'articlesSectionVisible'
+      ? data.about?.[section.visibilityKey] === true
+      : data.about?.[section.visibilityKey] !== false;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await saveContent('about', { ...(data.about?._id ? { _id: data.about._id } : {}), [section.visibilityKey]: !visible }, true);
+      setData((previous: any) => ({ ...previous, about: result.data }));
+      setNotice(`${section.label} is now ${result.data[section.visibilityKey] ? 'visible on' : 'hidden from'} the portfolio.`);
+    } catch (err: any) { setError(err.message); }
+    finally { setBusy(false); }
+  }
+  const sectionVisible = section?.visibilityKey
+    ? section.visibilityKey === 'articlesSectionVisible'
+      ? data?.about?.[section.visibilityKey] === true
+      : data?.about?.[section.visibilityKey] !== false
+    : true;
   if (authenticated === null) return <main className="min-h-screen grid place-items-center" role="status">Checking your session…</main>;
   if (!authenticated) return <main className="min-h-screen flex items-center justify-center px-6 py-16">
     <form onSubmit={signIn} className="glass-panel rounded-3xl p-8 w-full max-w-md flex flex-col gap-5">
@@ -196,12 +228,19 @@ export default function Admin() {
       <main className="min-w-0">
         {error && <div role="alert" className="mb-5 text-red-300 flex gap-4 items-center">{error}<button disabled={busy} onClick={refresh} className={buttonClass}>Retry</button></div>}
         {notice && <p role="status" className="text-[var(--accent)] mb-5">{notice}</p>}
+        {section?.visibilityKey && data && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+          <span className="text-sm text-white/70">{section.label} section — {sectionVisible ? 'Visible on portfolio' : 'Hidden from portfolio'}</span>
+          <button type="button" disabled={busy} onClick={toggleSectionVisibility} aria-pressed={sectionVisible} aria-label={`${sectionVisible ? 'Hide' : 'Show'} ${section.label} section`} className={buttonClass}>
+            {sectionVisible ? <><Eye size={17} /> Hide section</> : <><EyeOff size={17} /> Show section</>}
+          </button>
+        </div>}
         {sectionKey === 'messages' ? <Messages /> : !section ? <div>Section not found. <a href="/admin" className="underline">Open profile settings</a></div> : !data ? <p role="status">{busy ? 'Loading portfolio…' : 'Portfolio content is unavailable.'}</p> : !section.collection ?
           <Editor key={section.key} section={section} initial={data[section.source || section.key] || {}} onSaved={saved} /> : editing ?
           <Editor key={editing._id || 'new'} section={section} initial={editing} onSaved={saved} onCancel={() => setEditing(null)} /> : <div className="flex flex-col gap-5">
+            {section.key === 'course' && <Editor section={courseSectionSettings} initial={data.about || {}} onSaved={record => setData((previous: any) => ({ ...previous, about: record }))} />}
             <div className="flex justify-between items-center"><h2 className="text-2xl">{section.label}</h2><button disabled={busy} className={buttonClass} onClick={() => { setEditing({}); setNotice(''); }}><Plus size={16} /> Add item</button></div>
             {!(data[section.collection] || []).length && <div className="glass-panel rounded-3xl p-10 text-center text-white/50"><Inbox size={28} className="mx-auto mb-3" />No items yet. Add your first one above.</div>}
-            {(data[section.collection] || []).map((item: any) => <article key={item._id} className="glass-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4"><div className="min-w-0"><h3 className="text-lg break-words">{item.title || item.degree}</h3><p className="text-sm text-white/40">{item.company || item.institution || item.category || item.date}</p></div><div className="flex gap-2"><button disabled={busy} className={buttonClass} onClick={() => { setEditing(item); setNotice(''); }}>Edit</button><button disabled={busy} aria-label={`Delete ${item.title || item.degree}`} className={buttonClass + ' text-red-300'} onClick={() => remove(item)}><Trash2 size={16} /></button></div></article>)}
+            {(section.key === 'course' ? [...(data.courses || [])].sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)) : data[section.collection] || []).map((item: any) => <article key={item._id} className="glass-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4"><div className="min-w-0"><h3 className="text-lg break-words">{item.title || item.degree}</h3><p className="text-sm text-white/40">{item.company || item.institution || item.category || item.date}</p></div><div className="flex gap-2"><button disabled={busy} className={buttonClass} onClick={() => { setEditing(item); setNotice(''); }}>Edit</button><button disabled={busy} aria-label={`Delete ${item.title || item.degree}`} className={buttonClass + ' text-red-300'} onClick={() => remove(item)}><Trash2 size={16} /></button></div></article>)}
           </div>}
       </main>
     </div>

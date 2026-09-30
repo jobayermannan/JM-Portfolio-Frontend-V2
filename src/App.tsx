@@ -7,7 +7,7 @@ import { Hero } from './components/Hero';
 import { ProjectCard, ProjectItem } from './components/ProjectCard';
 import { AboutSection } from './components/AboutSection';
 import { Footer } from './components/Footer';
-import { getProfile, getProjects } from './api/index.js';
+import { getProfile, getProjects, getDataMlProjects, getSectionSettings, subscribePortfolioChanges } from './api/index.js';
 import { Layers } from 'lucide-react';
 const Admin = React.lazy(() => import('./admin/Admin'));
 
@@ -26,8 +26,24 @@ function Portfolio() {
   const [profile, setProfile] = useState<any>(null);
   const [loadError, setLoadError] = useState('');
   const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [dataMlProjects, setDataMlProjects] = useState<ProjectItem[]>([]);
+  const [sectionSettings, setSectionSettings] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const lenisRef = useRef<Lenis | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = subscribePortfolioChanges(() => {
+      Promise.all([getSectionSettings(), getProjects(), getDataMlProjects()]).then(([settings, mainProjects, mlProjects]) => {
+        if (active) {
+          setSectionSettings(settings);
+          setProjects(mainProjects);
+          setDataMlProjects(mlProjects);
+        }
+      }).catch(() => {});
+    });
+    return () => { active = false; unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -61,10 +77,12 @@ function Portfolio() {
 
     const loadInitialData = async () => {
       try {
-        const [profData, projData] = await Promise.all([getProfile(), getProjects()]);
+        const [profData, projData, mlData, settings] = await Promise.all([getProfile(), getProjects(), getDataMlProjects(), getSectionSettings()]);
         if (!isCancelled) {
           setProfile(profData);
           setProjects(projData);
+          setDataMlProjects(mlData);
+          setSectionSettings(settings);
         }
       } catch (err) {
         if (!isCancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load portfolio.');
@@ -175,12 +193,12 @@ function Portfolio() {
       <div className="ambient-noise pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_800px_at_50%_200px,rgba(255,255,255,0.02),transparent)]" />
 
       {/* Top Floating Glass Navbar */}
-      <Navbar
+      {sectionSettings?.navbarSectionVisible !== false && <Navbar
         activeTab={activeTab}
         onTabChange={handleTabChange}
         showNavAnimation={!isLoading}
         profile={profile}
-      />
+      />}
 
       {/* Main Content Area */}
       <main className="relative z-10 w-full flex flex-col items-center">
@@ -188,22 +206,22 @@ function Portfolio() {
           <p>{loadError}</p><button className="mt-3 underline" onClick={() => window.location.reload()}>Retry loading portfolio</button>
         </div>}
         {/* HERO SECTION */}
-        <div id="work" className="w-full">
+        {sectionSettings?.heroSectionVisible !== false && <div id="work" className="w-full">
           <Hero
             onScrollDown={handleScrollToProjects}
             startIntroAnimation={heroIntroStarted}
             profileData={profile}
             isLoading={isLoading}
           />
-        </div>
+        </div>}
 
         {/* WORK & STACKING PROJECT CARDS SECTION */}
-        <section
+        {(sectionSettings?.projectsSectionVisible !== false || sectionSettings?.dataMlSectionVisible !== false) && <section
           id="projects"
           className="relative w-full max-w-[1400px] px-6 sm:px-10 md:px-14 pt-6 pb-24"
         >
           {/* Glass Segmented Tab Control by Category */}
-          <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10 pb-4 border-b border-white/[0.08]">
+          {sectionSettings?.projectsSectionVisible !== false && <><div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10 pb-4 border-b border-white/[0.08]">
             <div className="flex items-center gap-2 overflow-x-auto max-w-full py-1 scrollbar-none">
               {categories.map((cat) => (
                 <button
@@ -259,17 +277,26 @@ function Portfolio() {
                 View all projects
               </button>
             </div>
-          )}
-        </section>
+          )}</>}
+          {sectionSettings?.dataMlSectionVisible !== false && <div className={sectionSettings?.projectsSectionVisible !== false ? 'pt-8 border-t border-white/[0.08]' : ''}>
+            <div className="flex flex-col gap-1 mb-10">
+              <span className="text-[#8e8e93] text-xs font-mono uppercase tracking-widest">Data &amp; ML</span>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">{sectionSettings?.dataMlTitle || 'Data & ML'}</h2>
+              <p className="text-sm text-[#a1a1aa] leading-relaxed">{sectionSettings?.dataMlSubtitle || 'Data analysis, machine learning experiments, and data-driven systems.'}</p>
+            </div>
+            {dataMlProjects.length ? dataMlProjects.map((project, index) => <ProjectCard key={project.id} project={project} index={index} stackIndex={projects.length + index} totalCards={dataMlProjects.length} />) :
+              <p className="text-sm text-white/40">Data &amp; ML projects will appear here when published.</p>}
+          </div>}
+        </section>}
 
         {/* INFO / ABOUT SECTION */}
         <div className="w-full">
-          <AboutSection />
+          <AboutSection sectionSettings={sectionSettings} />
         </div>
       </main>
 
       {/* FOOTER */}
-      <Footer onNavClick={handleTabChange} profile={profile} />
+      {sectionSettings?.footerSectionVisible !== false && <Footer onNavClick={handleTabChange} profile={profile} showContact={sectionSettings?.contactSectionVisible !== false} />}
     </div>
   );
 }

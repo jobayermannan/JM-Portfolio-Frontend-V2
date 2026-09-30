@@ -1,3 +1,6 @@
+import { suggestedSkillCategories, skillsTitle, skillsSubtitle } from './skills.js';
+import { trainingItems } from './training.js';
+
 /**
  * Content Layer
  *
@@ -41,16 +44,6 @@ export const socialLinks = {
   location: "Mirpur, Dhaka, Bangladesh",
 };
 
-// About Schema Reference
-// const aboutSchema = new mongoose.Schema({
-//   lottieURL: { type: String, required: true },
-//   description1: { type: String, required: true },
-//   description2: { type: String, required: true },
-//   skills: [{
-//     name: { type: String, required: true },
-//     percentage: { type: Number, required: true, min: 0, max: 100 }
-//   }],
-// });
 export const aboutData = {
   lottieURL: "https://assets9.lottiefiles.com/packages/lf20_sSF6EG.json",
   eyebrow: "ABOUT ME",
@@ -61,20 +54,8 @@ export const aboutData = {
   description2:
     "Outside of writing clean modular code, I enjoy breaking down complex programming paradigms into intuitive real-world metaphors, continuous learning, and exploring architectural patterns.",
   storyLead: "This is my journey — translating ideas into high-performance web applications with precision.",
-  skills: [
-    { name: "HTML5", percentage: 90 },
-    { name: "CSS3", percentage: 95 },
-    { name: "Tailwind", percentage: 85 },
-    { name: "JavaScript", percentage: 90 },
-    { name: "React.js", percentage: 85 },
-    { name: "ShadCN", percentage: 70 },
-    { name: "TypeScript", percentage: 75 },
-    { name: "Redux", percentage: 80 },
-    { name: "Next.js", percentage: 75 },
-    { name: "Node.js", percentage: 80 },
-    { name: "Express.js", percentage: 75 },
-    { name: "MongoDB", percentage: 75 },
-  ],
+  skillsTitle, skillsSubtitle,
+  skillCategories: suggestedSkillCategories,
 };
 
 // Experience Schema Reference
@@ -194,30 +175,7 @@ export const projectsData = [
 //   image: { type: String, required: true },
 //   link: { type: String, required: true },
 // });
-export const coursesData = [
-  {
-    id: "course-ph-1",
-    title: "Complete Web Development",
-    instructor: "Programming Hero (Jhankar Mahbub)",
-    category: "Complete Web Development",
-    description:
-      "The Programming Hero Complete Web Development Course With Jhankar Mahbub: 950 videos providing extensive coverage of MERN stack technologies. These videos are designed to cater to learners at all levels, from beginners to advanced developers. Structured to explain concepts clearly and concisely, including 45 projects that start with simple tasks and gradually become more complex.",
-    image: "",
-    link: "https://www.programming-hero.com",
-    badge: "950 Videos · 45 Projects",
-  },
-  {
-    id: "course-ph-2",
-    title: "Next Level Web Development",
-    instructor: "Programming Hero",
-    category: "Next Level Web Development",
-    description:
-      "Advanced engineering course covering Next.js 14 App Router, Server Actions, TypeScript strict architecture, Redux Toolkit & RTK Query cache invalidation, PostgreSQL, Prisma ORM, and production microservice deployment.",
-    image: "",
-    link: "https://www.programming-hero.com",
-    badge: "Advanced MERN & Next.js",
-  },
-];
+export const coursesData = trainingItems;
 
 // Blogs
 export const blogsData = [

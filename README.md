@@ -29,6 +29,8 @@ Open `/admin` or `/admin-login`. Use the existing backend admin account. The adm
 | `/admin/contact` | Contact card, availability, timezone, heading, social and resume links |
 | `/admin/messages` | Private paginated contact-message inbox |
 
+Use `/admin/visibility` to show or hide Technical Articles and Data & ML. Technical Articles start hidden; their records remain editable at `/admin/blog`. Use `/admin/data-ml` to create, edit, hide, feature, or delete Data & ML projects. Each project has optional field visibility switches and uses the existing image upload control. Data & ML appears immediately after the main project cards when its section switch is on.
+
 New records can be created from an empty database. Saves use the server-returned record, deletions ask for confirmation, unsaved edits warn before navigation, and expired sessions require sign-in. Public content refreshes on page load. Preview in a separate tab with “View portfolio” and reload after edits.
 
 The existing resume is available at `public/resume.pdf`. Older local image paths should be replaced using the admin upload control after Cloudinary is configured. Empty optional links are hidden. Accent selection remains a visitor preference.
@@ -51,3 +53,5 @@ npm run build
 Use `updated-frontend` as the frontend project root and publish `dist`. Netlify `_redirects` and Vercel rewrites support direct admin routes. Production does not use the Vite development proxy: configure the absolute backend URL before building, or configure your host to proxy `/api/v1` explicitly. Start/redeploy the upgraded backend before switching the frontend.
 
 No Gemini API key is needed. Backend connection settings and admin credentials stay on the backend.
+
+Skills use seven editable category cards with compact technology chips, without proficiency ratings or per-skill project links. See [the Skills redesign report](SKILLS-REDESIGN.md) for content, evidence, validation, and backend adoption steps.

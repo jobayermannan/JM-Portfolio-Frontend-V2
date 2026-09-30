@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 
-interface FooterProps { onNavClick: (tab: 'work' | 'info') => void; profile?: any }
-export const Footer: React.FC<FooterProps> = ({ onNavClick, profile }) => {
+interface FooterProps { onNavClick: (tab: 'work' | 'info') => void; profile?: any; showContact?: boolean }
+export const Footer: React.FC<FooterProps> = ({ onNavClick, profile, showContact = true }) => {
   const social = profile?.social || {};
   const links = [['GitHub', social.github], ['LinkedIn', social.linkedin], ['Medium', social.medium], ['Facebook', social.facebook], ['Resume', social.resume], ['Email', social.email ? `mailto:${social.email}` : '']].filter(([, url]) => url);
   return <footer className="relative w-full border-t border-white/[0.08] bg-[#0c0c0e] py-16 px-6 sm:px-10 md:px-14">
@@ -12,7 +12,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavClick, profile }) => {
         <div className="md:col-span-3 flex flex-col gap-3"><span className="text-xs font-mono uppercase text-[#8e8e93] tracking-widest">{profile?.footerNavigationTitle ?? ''}</span><div className="flex flex-col gap-2 text-sm text-[#c4c4c8]">
           <button type="button" onClick={() => onNavClick('work')} className="text-left hover:text-[var(--accent)] w-fit">{profile?.footerWorkLabel ?? ''}</button>
           <button type="button" onClick={() => onNavClick('info')} className="text-left hover:text-[var(--accent)] w-fit">{profile?.footerInfoLabel ?? ''}</button>
-          <a href="#contact" className="hover:text-[var(--accent)]">{profile?.footerContactLabel ?? ''}</a>
+          {showContact && <a href="#contact" className="hover:text-[var(--accent)]">{profile?.footerContactLabel ?? ''}</a>}
         </div></div>
         <div className="md:col-span-4 flex flex-col gap-3"><span className="text-xs font-mono uppercase text-[#8e8e93] tracking-widest">{profile?.footerSocialTitle ?? ''}</span><div className="grid grid-cols-2 gap-2.5 text-sm text-[#c4c4c8]">{links.map(([label, url]) => <a key={label} href={url} target={label === 'Email' ? undefined : '_blank'} rel="noreferrer" className="hover:text-white flex items-center gap-1">{label}<ArrowUpRight className="w-3.5 h-3.5 text-[var(--accent)]" /></a>)}</div></div>
       </div>
