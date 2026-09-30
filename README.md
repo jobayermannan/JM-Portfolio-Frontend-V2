@@ -1,3 +1,5 @@
+Live URL: https://jm-portfolio-frontend-v2.vercel.app/
+
 # Updated portfolio frontend
 
 This directory is **Frontend Version 2**. Existing layout, animation, colors, and component structure remain; portfolio content is served by the backend CMS. `/admin/navbar` and `/admin/footer` edit the shared profile record. Projects, experience, and education support numeric display order; skills can be moved in their editor. Profile and project image fields support persistent Cloudinary uploads through the authenticated backend. Configure Cloudinary only on the backend.
