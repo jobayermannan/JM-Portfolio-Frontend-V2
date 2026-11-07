@@ -1,4 +1,4 @@
-Live URL: https://jm-portfolio-frontend-v2.vercel.app/
+Live URL: https://jobayermannan.vercel.app/
 
 # Updated portfolio frontend
 
