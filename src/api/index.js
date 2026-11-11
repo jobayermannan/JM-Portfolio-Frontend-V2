@@ -52,12 +52,21 @@ export function heroFromIntro(intro = {}) {
 export function profileFromPortfolio(data) {
   const intro = data.intro || {};
   const contact = data.contact || {};
+  const rawSocial = contact.social || {};
+  const social = {
+    ...rawSocial,
+    github: rawSocial.github || 'https://github.com/jobayermannan',
+    linkedin: rawSocial.linkedin || 'https://www.linkedin.com/in/jobayermannan',
+    resume: rawSocial.resume || '/resume.pdf',
+    email: contact.email || 'jobayermannan777@gmail.com',
+  };
   return {
     ...intro,
     fullName: [intro.firstName, intro.lastName].filter(Boolean).join(' ') || contact.name || 'Portfolio',
     avatar: intro.avatar || '',
     ...heroFromIntro(intro),
-    social: { ...contact.social, email: contact.email }, contact,
+    social,
+    contact: { ...contact, name: contact.name === 'Jobayer Mannna' ? 'Jobayer Mannan' : contact.name },
     experience: (data.experiences || []).map(withId),
   };
 }
