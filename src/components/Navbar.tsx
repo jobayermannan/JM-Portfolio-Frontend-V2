@@ -24,28 +24,28 @@ export const Navbar: React.FC<NavbarProps> = ({
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
       className="fixed top-0 inset-x-0 z-50 pointer-events-none px-4 sm:px-8 md:px-12 pt-5 sm:pt-7"
     >
-      <div className="w-full max-w-[1400px] mx-auto flex items-center justify-between gap-3">
+      <div className="w-full max-w-[1400px] mx-auto flex items-center justify-between gap-2 sm:gap-3">
         {/* Left: Name and Title (Text only, no logo, no icon, no avatar) */}
-        <div className="pointer-events-auto flex flex-col select-none shrink-0">
+        <div className="pointer-events-auto flex flex-col select-none min-w-0">
           <a
             href="#work"
             onClick={(e) => {
               e.preventDefault();
               onTabChange('work');
             }}
-            className="group block focus:outline-none"
+            className="group block min-w-0 focus:outline-none"
           >
-            <h1 className="text-white text-[20px] sm:text-[24px] font-medium tracking-[-0.02em] leading-tight font-sans">
+            <h1 className="text-white text-[14px] min-[360px]:text-[17px] min-[400px]:text-[20px] sm:text-[24px] font-medium tracking-[-0.02em] leading-tight font-sans truncate">
               {profile?.fullName || 'Portfolio'}
             </h1>
-            <p className="text-[#8e8e93] text-[14px] sm:text-[16px] font-normal leading-tight font-sans tracking-[-0.01em]">
+            <p className="text-[#8e8e93] text-[11px] min-[360px]:text-[12px] min-[400px]:text-[14px] sm:text-[16px] font-normal leading-tight font-sans tracking-[-0.01em] truncate">
               {profile?.caption || ''}
             </p>
           </a>
         </div>
 
         {/* Center: Floating Glass Navbar Pill */}
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto shrink-0">
           <nav
             aria-label="Primary navigation"
             className="glass-nav relative flex items-center p-1 rounded-full text-sm font-medium select-none shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => profile?.navWorkHref && profile.navWorkHref !== '#work' ? window.location.assign(profile.navWorkHref) : onTabChange('work')}
-              className={`relative px-4 sm:px-6 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 z-10 cursor-pointer ${
+              className={`relative px-2.5 min-[400px]:px-4 sm:px-6 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 z-10 cursor-pointer ${
                 activeTab === 'work' ? 'text-white' : 'text-[#a1a1aa] hover:text-white'
               }`}
             >
@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => profile?.navInfoHref && profile.navInfoHref !== '#about' ? window.location.assign(profile.navInfoHref) : onTabChange('info')}
-              className={`relative px-4 sm:px-6 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 z-10 cursor-pointer ${
+              className={`relative px-2.5 min-[400px]:px-4 sm:px-6 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 z-10 cursor-pointer ${
                 activeTab === 'info' ? 'text-white' : 'text-[#a1a1aa] hover:text-white'
               }`}
             >
@@ -107,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right side in exact order: LinkedIn ↗, Resume ↗, Accent button, Avatar */}
-        <div className="pointer-events-auto flex items-center gap-3 sm:gap-5 md:gap-6 select-none shrink-0">
+        <div className="pointer-events-auto flex items-center gap-2 sm:gap-5 md:gap-6 select-none shrink-0">
           {profile?.social?.linkedin && <a
             href={profile.social.linkedin}
             target="_blank"
