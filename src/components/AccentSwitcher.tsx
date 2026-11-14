@@ -91,7 +91,7 @@ export const AccentSwitcher: React.FC = () => {
         aria-label="Change portfolio accent color"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-9 h-9 rounded-full flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 hover:border-white/30 backdrop-blur-md text-white transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] group cursor-pointer"
+        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 hover:border-white/30 backdrop-blur-md text-white transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] group cursor-pointer"
         style={{
           boxShadow: isOpen ? '0 0 16px var(--accent-glow)' : 'none',
         }}
